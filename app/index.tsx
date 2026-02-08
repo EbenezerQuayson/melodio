@@ -1,24 +1,22 @@
-import { Text, View } from 'react-native';
-import { use, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { View, ActivityIndicator } from 'react-native';
+import { Redirect } from 'expo-router';
+import { useAuth } from '@/providers/AuthProvider';
 
 
 export default function Index() {
-useEffect(() => {
-  supabase.auth.getSession().then(({ data }) => {
-    console.log('Session:', data.session)
-  })
-}, [])
+  const { session, loading } = useAuth()
 
-  return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Text>🎶 Melodio is alivee!</Text>
-    </View>
-  );
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    )
+  }
+
+  if (!session) {
+    return <Redirect href="/auth/welcome" />
+  } 
+    return <Redirect href="/tabs" />  
+  
 }
