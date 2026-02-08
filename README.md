@@ -5,6 +5,7 @@ instruments, and ear training through interactive lessons and gamified practice.
 
 ## Tech Stack
 - React Native (Expo)
+- TypeScript
 - Supabase (Auth & Database)
 - JavaScript
 
