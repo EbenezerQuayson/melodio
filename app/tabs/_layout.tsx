@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 
 export default function TabsLayout() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   return (
     <Tabs
       screenOptions={{

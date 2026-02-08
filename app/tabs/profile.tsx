@@ -4,9 +4,11 @@ import { supabase } from '@/lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function Profile() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
 
   const handleLogout = async () => {
     Alert.alert(
@@ -28,11 +30,11 @@ export default function Profile() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       
       {/* 1. Background */}
       <LinearGradient
-        colors={['#0f172a', '#1e1b4b', '#000000']}
+        colors={colors.backgroundGradient}
         style={styles.background}
       />
 
@@ -42,28 +44,28 @@ export default function Profile() {
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
             <Image 
-              source={{ uri: 'https://ui-avatars.com/api/?name=Maestro+Music&background=a855f7&color=fff&size=200' }} 
+              source={{ uri: 'https://ui-avatars.com/api/?name=Man+Pkay&background=a855f7&color=fff&size=200' }} 
               style={styles.avatar} 
             />
             <View style={styles.editBadge}>
               <Ionicons name="pencil" size={16} color="white" />
             </View>
           </View>
-          <Text style={styles.name}>Maestro</Text>
-          <Text style={styles.email}>maestro@melodio.com</Text>
+          <Text style={[styles.name, { color: colors.text }]}>Man Pkay</Text>
+          <Text style={[styles.email, { color: colors.text }]}>manpkay@gmail.com</Text>
           <View style={styles.proBadge}>
             <Text style={styles.proText}>PRO MEMBER</Text>
           </View>
         </View>
 
         {/* 3. Stats Grid */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
+        <View style={[styles.statsContainer, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
+          <View style={[styles.statItem, { backgroundColor: colors.cardBg }]}>
             <Text style={styles.statNumber}>12</Text>
             <Text style={styles.statLabel}>Streak</Text>
           </View>
           <View style={styles.statDivider} />
-          <View style={styles.statItem}>
+          <View style={[styles.statItem, { backgroundColor: colors.cardBg }]}>
             <Text style={styles.statNumber}>850</Text>
             <Text style={styles.statLabel}>Total XP</Text>
           </View>
@@ -116,7 +118,6 @@ function MenuItem({ icon, label }: { icon: any, label: string }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   background: {
     position: 'absolute',
