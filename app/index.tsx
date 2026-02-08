@@ -9,7 +9,7 @@ export default function Index() {
         justifyContent: 'center',
       }}
     >
-      <Text>🎶 Melodio is alive!</Text>
+      <Text>🎶 Melodio is alivee!</Text>
     </View>
   );
 }
