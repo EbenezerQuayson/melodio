@@ -54,39 +54,39 @@ export default function Profile() {
           <Text style={[styles.name, { color: colors.text }]}>Man Pkay</Text>
           <Text style={[styles.email, { color: colors.text }]}>manpkay@gmail.com</Text>
           <View style={styles.proBadge}>
-            <Text style={styles.proText}>PRO MEMBER</Text>
+            <Text style={[styles.proText, { color: colors.proText }]}>PRO MEMBER</Text>
           </View>
         </View>
 
         {/* 3. Stats Grid */}
-        <View style={[styles.statsContainer, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
-          <View style={[styles.statItem, { backgroundColor: colors.cardBg }]}>
-            <Text style={styles.statNumber}>12</Text>
-            <Text style={styles.statLabel}>Streak</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={[styles.statItem, { backgroundColor: colors.cardBg }]}>
-            <Text style={styles.statNumber}>850</Text>
-            <Text style={styles.statLabel}>Total XP</Text>
+        <View style={[styles.statsContainer, { backgroundColor: colors.statsContainerBg }]}>
+          <View style={styles.statItem}>
+            <Text style={[styles.statNumber, { color: colors.text }]}>12</Text>
+            <Text style={[styles.statLabel, { color: colors.statsLabel }]}>Streak</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>Lv. 4</Text>
-            <Text style={styles.statLabel}>Rank</Text>
+            <Text style={[styles.statNumber, { color: colors.text }]}>850</Text>
+            <Text style={[styles.statLabel, { color: colors.statsLabel }]}>Total XP</Text>
+          </View>
+          <View style={[styles.statDivider, { backgroundColor: colors.statsDivider }]} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statNumber, { color: colors.text }]}>Lv. 4</Text>
+            <Text style={[styles.statLabel, { color: colors.statsLabel }]}>Rank</Text>
           </View>
         </View>
 
         {/* 4. Menu Options */}
         <View style={styles.menuContainer}>
-          <Text style={styles.sectionTitle}>General</Text>
+          <Text style={[styles.sectionTitle, { color: colors.sectionTitle }]}>General</Text>
           
-          <MenuItem icon="person-outline" label="Edit Profile" />
-          <MenuItem icon="notifications-outline" label="Notifications" />
-          <MenuItem icon="shield-checkmark-outline" label="Privacy & Security" />
+          <MenuItem icon="person-outline" label="Edit Profile" colors={colors} />
+          <MenuItem icon="notifications-outline" label="Notifications" colors={colors} />
+          <MenuItem icon="shield-checkmark-outline" label="Privacy & Security" colors={colors} />
           
-          <Text style={styles.sectionTitle}>Support</Text>
-          <MenuItem icon="help-buoy-outline" label="Help & Support" />
-          <MenuItem icon="star-outline" label="Rate Melodio" />
+          <Text style={[styles.sectionTitle, { color: colors.sectionTitle }]}>Support</Text>
+          <MenuItem icon="help-buoy-outline" label="Help & Support" colors={colors} />
+          <MenuItem icon="star-outline" label="Rate Melodio" colors={colors} />
         </View>
 
         {/* 5. Logout Button */}
@@ -103,14 +103,14 @@ export default function Profile() {
 }
 
 // --- Reusable Menu Item ---
-function MenuItem({ icon, label }: { icon: any, label: string }) {
+function MenuItem({ icon, label, colors }: { icon: any, label: string, colors: any }) {
   return (
-    <TouchableOpacity style={styles.menuItem}>
-      <View style={styles.menuIconBox}>
-        <Ionicons name={icon} size={22} color="white" />
+    <TouchableOpacity style={[styles.menuItem, { backgroundColor: colors.menuItemBg }]}>
+      <View style={[styles.menuIconBox, { backgroundColor: colors.menuIconBoxBg }]}>
+        <Ionicons name={icon} size={22} color={colors.text} />
       </View>
-      <Text style={styles.menuLabel}>{label}</Text>
-      <Ionicons name="chevron-forward" size={18} color="#475569" />
+      <Text style={[styles.menuLabel, { color: colors.text }]}>{label}</Text>
+      <Ionicons name="chevron-forward" size={18} color={colors.text} />
     </TouchableOpacity>
   );
 }
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245, 158, 11, 0.5)',
   },
   proText: {
-    color: '#fbbf24',
+    // color: '#fbbf24',
     fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1,
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   // Stats Section
   statsContainer: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(30, 41, 59, 0.5)',
+    // backgroundColor: 'rgba(30, 41, 59, 0.5)',
     marginHorizontal: 20,
     borderRadius: 20,
     padding: 20,
@@ -201,17 +201,17 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 30,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    // backgroundColor: 'rgba(255,255,255,0.1)',
   },
   statNumber: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: 'white',
+    // color: 'white',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#94a3b8',
+    // color: '#94a3b8',
   },
   // Menu Section
   menuContainer: {
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#64748b',
+    // color: '#64748b',
     marginBottom: 12,
     marginTop: 8,
     textTransform: 'uppercase',
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(30, 41, 59, 0.3)',
+    // backgroundColor: 'rgba(30, 41, 59, 0.3)',
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   menuLabel: {
     flex: 1,
     fontSize: 16,
-    color: 'white',
+    // color: 'white',
     fontWeight: '500',
   },
   // Logout
