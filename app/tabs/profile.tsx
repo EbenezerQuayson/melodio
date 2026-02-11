@@ -136,7 +136,12 @@ export default function Profile() {
            />
           
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Support</Text>
-          <MenuItem icon="help-buoy-outline" label="Help & Support" colors={colors} />
+          <MenuItem 
+  icon="help-buoy-outline" 
+  label="Help & Support" 
+  colors={colors} 
+  onPress={() => router.push('/tabs/help_support')} 
+/>
           <MenuItem icon="star-outline" label="Rate Melodio" colors={colors} />
         </View>
 
