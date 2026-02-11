@@ -71,6 +71,30 @@ export default function TabsLayout() {
           ),
         }}
       />
+
+      <Tabs.Screen
+  name="edit_profile" // This must match the filename exactly
+  options={{
+    href: null, // <--- This hides it from the bottom bar
+    headerShown: false,
+  }}
+/>
+
+<Tabs.Screen
+  name="notifications" // This must match the filename exactly
+  options={{
+    href: null, // <--- This hides it from the bottom bar
+    headerShown: false,
+  }}
+/>
+
+<Tabs.Screen
+  name="privacy" // This must match the filename exactly
+  options={{
+    href: null, // <--- This hides it from the bottom bar
+    headerShown: false,
+  }}
+/>
     </Tabs>
   );
 }
