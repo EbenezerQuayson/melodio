@@ -1,14 +1,22 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar, Alert } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
+import { useProfile } from '@/hooks/useProfile';
 
 export default function Profile() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { profile, loading, user , refetch} = useProfile();
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch(); // Refetch profile data when the screen is focused
+    }, [refetch])
+  );
 
   const handleLogout = async () => {
     Alert.alert(
@@ -21,12 +29,31 @@ export default function Profile() {
           style: "destructive", 
           onPress: async () => {
             await supabase.auth.signOut();
-            router.replace('/'); // Go back to landing
+            router.replace('/'); 
           }
         }
       ]
     );
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', backgroundColor: colors.background }]}>
+        <Text style={{ textAlign: 'center', color: colors.text }}>
+          Loading profile...
+        </Text>
+      </View>
+    );
+  }
+
+  // --- FIX: Robust Avatar Logic ---
+  // 1. If profile has a custom avatar, use it.
+  // 2. If not, use UI Avatars with their display name.
+  // 3. If display name is also missing, fallback to "Melodio User".
+  const displayName = profile?.display_name || 'Melodio User';
+  const avatarUrl = profile?.avatar_url 
+    ? profile.avatar_url 
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=a855f7&color=fff&size=200`;
 
   return (
     <View style={styles.container}>
@@ -42,50 +69,79 @@ export default function Profile() {
         
         {/* 2. Profile Header (Avatar + Name) */}
         <View style={styles.header}>
-          <View style={styles.avatarContainer}>
+          <View style={[styles.avatarContainer, { borderColor: colors.tint }]}> 
+             {/* Added borderColor logic to match theme */}
             <Image 
-              source={{ uri: 'https://ui-avatars.com/api/?name=Man+Pkay&background=a855f7&color=fff&size=200' }} 
+              key={avatarUrl} // Force re-render if URL changes
+              source={{ uri: avatarUrl }} 
               style={styles.avatar} 
             />
-            <View style={styles.editBadge}>
+            <View style={[styles.editBadge, { borderColor: colors.background }]}>
+               {/* Badge border matches background to look cut-out */}
               <Ionicons name="pencil" size={16} color="white" />
             </View>
           </View>
-          <Text style={[styles.name, { color: colors.text }]}>Man Pkay</Text>
-          <Text style={[styles.email, { color: colors.text }]}>manpkay@gmail.com</Text>
+
+          <Text style={[styles.name, { color: colors.text }]}>
+            {profile?.display_name || 'Set your name'}
+          </Text>
+          <Text style={[styles.email, { color: colors.textSecondary }]}>
+            {profile?.username ? `@${profile.username}` : user?.email}
+          </Text>
+          
           <View style={styles.proBadge}>
-            <Text style={[styles.proText, { color: colors.proText }]}>PRO MEMBER</Text>
+            <Text style={styles.proText}>PRO MEMBER</Text>
           </View>
         </View>
 
         {/* 3. Stats Grid */}
-        <View style={[styles.statsContainer, { backgroundColor: colors.statsContainerBg }]}>
+        <View style={[styles.statsContainer, { backgroundColor: colors.cardBg }]}>
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: colors.text }]}>12</Text>
-            <Text style={[styles.statLabel, { color: colors.statsLabel }]}>Streak</Text>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{profile?.streak ?? 0}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Streak</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: colors.cardBorder }]} />
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: colors.text }]}>850</Text>
-            <Text style={[styles.statLabel, { color: colors.statsLabel }]}>Total XP</Text>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{profile?.xp ?? 0}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total XP</Text>
           </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.statsDivider }]} />
+          <View style={[styles.statDivider, { backgroundColor: colors.cardBorder }]} />
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: colors.text }]}>Lv. 4</Text>
-            <Text style={[styles.statLabel, { color: colors.statsLabel }]}>Rank</Text>
+            <Text style={[styles.statNumber, { color: colors.text }]}>Lv. {profile?.level ?? 1}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Rank</Text>
           </View>
         </View>
 
         {/* 4. Menu Options */}
         <View style={styles.menuContainer}>
-          <Text style={[styles.sectionTitle, { color: colors.sectionTitle }]}>General</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>General</Text>
           
-          <MenuItem icon="person-outline" label="Edit Profile" colors={colors} />
-          <MenuItem icon="notifications-outline" label="Notifications" colors={colors} />
-          <MenuItem icon="shield-checkmark-outline" label="Privacy & Security" colors={colors} />
+          <MenuItem 
+            icon="person-outline" 
+            label="Edit Profile" 
+            colors={colors} 
+            onPress={() => router.push('/tabs/edit_profile')} // Make sure this path is correct!
+          />
+          <MenuItem 
+          icon="notifications-outline" 
+          label="Notifications" colors={colors} 
+          onPress={() => router.push('/tabs/notifications')}
+           />
+
+          <MenuItem 
+           icon="shield-checkmark-outline" 
+           label="Privacy & Security"
+           colors={colors}
+           onPress={() => router.push('/tabs/privacy')}
+           />
           
-          <Text style={[styles.sectionTitle, { color: colors.sectionTitle }]}>Support</Text>
-          <MenuItem icon="help-buoy-outline" label="Help & Support" colors={colors} />
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Support</Text>
+          <MenuItem 
+  icon="help-buoy-outline" 
+  label="Help & Support" 
+  colors={colors} 
+  onPress={() => router.push('/tabs/help_support')} 
+/>
           <MenuItem icon="star-outline" label="Rate Melodio" colors={colors} />
         </View>
 
@@ -95,7 +151,7 @@ export default function Profile() {
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
         
-        <Text style={styles.versionText}>Version 1.0.0 (Beta)</Text>
+        <Text style={[styles.versionText, { color: colors.textSecondary }]}>Version 1.0.0 (Beta)</Text>
 
       </ScrollView>
     </View>
@@ -103,14 +159,17 @@ export default function Profile() {
 }
 
 // --- Reusable Menu Item ---
-function MenuItem({ icon, label, colors }: { icon: any, label: string, colors: any }) {
+function MenuItem({ icon, label, colors, onPress }: { icon: any, label: string, colors: any, onPress?: () => void }) {
   return (
-    <TouchableOpacity style={[styles.menuItem, { backgroundColor: colors.menuItemBg }]}>
-      <View style={[styles.menuIconBox, { backgroundColor: colors.menuIconBoxBg }]}>
+    <TouchableOpacity 
+      style={[styles.menuItem, { backgroundColor: colors.cardBg }]} 
+      onPress={onPress}
+    >
+      <View style={[styles.menuIconBox, { backgroundColor: colors.iconBg }]}>
         <Ionicons name={icon} size={22} color={colors.text} />
       </View>
       <Text style={[styles.menuLabel, { color: colors.text }]}>{label}</Text>
-      <Ionicons name="chevron-forward" size={18} color={colors.text} />
+      <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
     </TouchableOpacity>
   );
 }
@@ -137,13 +196,14 @@ const styles = StyleSheet.create({
   avatarContainer: {
     position: 'relative',
     marginBottom: 16,
+    borderWidth: 4, 
+    borderRadius: 54, // slightly larger than avatar
+    padding: 2,
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    borderWidth: 4,
-    borderColor: 'rgba(168, 85, 247, 0.5)', // Purple glow border
   },
   editBadge: {
     position: 'absolute',
@@ -155,18 +215,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#0f172a',
+    borderWidth: 3, 
   },
   name: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: 'white',
     marginBottom: 4,
   },
   email: {
     fontSize: 14,
-    color: '#94a3b8',
     marginBottom: 12,
   },
   proBadge: {
@@ -178,15 +235,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245, 158, 11, 0.5)',
   },
   proText: {
-    // color: '#fbbf24',
+    color: '#fbbf24',
     fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1,
   },
-  // Stats Section
   statsContainer: {
     flexDirection: 'row',
-    // backgroundColor: 'rgba(30, 41, 59, 0.5)',
     marginHorizontal: 20,
     borderRadius: 20,
     padding: 20,
@@ -201,26 +256,21 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 30,
-    // backgroundColor: 'rgba(255,255,255,0.1)',
   },
   statNumber: {
     fontSize: 20,
     fontWeight: 'bold',
-    // color: 'white',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    // color: '#94a3b8',
   },
-  // Menu Section
   menuContainer: {
     paddingHorizontal: 20,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    // color: '#64748b',
     marginBottom: 12,
     marginTop: 8,
     textTransform: 'uppercase',
@@ -229,7 +279,6 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    // backgroundColor: 'rgba(30, 41, 59, 0.3)',
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
@@ -238,7 +287,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -246,10 +294,8 @@ const styles = StyleSheet.create({
   menuLabel: {
     flex: 1,
     fontSize: 16,
-    // color: 'white',
     fontWeight: '500',
   },
-  // Logout
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -270,7 +316,6 @@ const styles = StyleSheet.create({
   },
   versionText: {
     textAlign: 'center',
-    color: '#475569',
     fontSize: 12,
     marginTop: 24,
   },

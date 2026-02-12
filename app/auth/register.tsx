@@ -26,8 +26,7 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function signUp() {
-    // 1. Basic Validation
+async function signUp() {
     if (!email || !password || !fullName || !username) {
       alert('Please fill in all fields');
       return;
@@ -35,15 +34,14 @@ export default function Register() {
 
     setLoading(true);
     
-    // 2. Pass metadata to Supabase
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
-          username: username,
-          avatar_url: '', // Optional: placeholder for later
+          username: username, // This is what the SQL trigger uses
+          avatar_url: '' // Default empty, user can update later. The trigger will set a default avatar if this is empty.
         },
       },
     });
@@ -51,7 +49,11 @@ export default function Register() {
     setLoading(false);
 
     if (error) {
-      alert(error.message);
+      if (error.message.includes('unique constraint')) {
+        alert('That username is already taken. Please choose another.');
+      } else {
+        alert(error.message);
+      }
     } else {
       alert('Check your email to confirm!');
       router.push('/auth/login');

@@ -1,19 +1,33 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, TextInput, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
+import { useProfile } from '@/hooks/useProfile';
 
 export default function Dashboard() {
-  const {colors, isDark, toggleTheme} = useTheme();
+  const router = useRouter();
+  const { colors, isDark, toggleTheme } = useTheme();
+  
+  // 1. Fetch real profile data
+  const { profile, refetch } = useProfile();
 
+  // 2. Refresh profile data whenever dashboard is viewed
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+
+  const avatarUrl = profile?.avatar_url 
+    ? profile.avatar_url 
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name ?? 'User')}&background=a855f7&color=fff`;
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
-      {/* 1. Main Background */}
       <LinearGradient
         colors={colors.backgroundGradient}
         style={styles.background}
@@ -21,17 +35,16 @@ export default function Dashboard() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* 2. Header Section */}
+        {/* HEADER SECTION */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, { color: colors.text }]}>Good Evening,</Text>
-            <Text style={[styles.username, { color: colors.text }]}>Man Pkay 🎶</Text>
+            <Text style={[styles.greeting, { color: colors.textSecondary }]}>Good Evening,</Text>
+            <Text style={[styles.username, { color: colors.text }]}>
+              {profile?.display_name?.split(' ')[0] ?? 'Artist'} 🎶
+            </Text>
           </View>
 
-          {/* RIGHT SIDE: Toggle + Avatar */}
           <View style={styles.headerRight}>
-            
-            {/* THEME TOGGLE */}
             <Pressable 
               onPress={toggleTheme} 
               style={[styles.iconButton, { backgroundColor: colors.iconBg }]}
@@ -43,48 +56,51 @@ export default function Dashboard() {
               />
             </Pressable>
 
-            {/* Avatar Placeholder */}
-            <View style={[styles.avatarContainer, { borderColor: colors.cardBorder, backgroundColor: colors.iconBg }]}>
-              <Pressable onPress={() => router.replace('/tabs/profile')}>
-               <Ionicons name="person" size={24} color={colors.text} />
-              </Pressable>
-            </View>
+            {/* REAL AVATAR */}
+            <Pressable 
+              onPress={() => router.push('/tabs/profile')}
+              style={[styles.avatarContainer, { borderColor: colors.tint }]}
+            >
+              <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+            </Pressable>
           </View>
         </View>
 
-        {/* 3. Stats Row */}
+        {/* 3. NEW SEARCH BAR */}
+        <Pressable 
+          onPress={() => router.push('/tabs/explore')} // We will build this next
+          style={[styles.searchContainer, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}
+        >
+          <Ionicons name="search" size={20} color={colors.textSecondary} />
+          <Text style={[styles.searchPlaceholder, { color: colors.textSecondary }]}>
+            Search musicians or skills...
+          </Text>
+        </Pressable>
+
+        {/* STATS ROW */}
         <View style={styles.statsRow}>
           <StatCard 
             label="Level" 
-            value="Beginner" 
+            value={profile?.level ?? "Beginner"} 
             icon="school-outline" 
             accent="#3b82f6" 
             theme={colors}
           />
           <StatCard 
-            label="Instrument" 
-            value="Keyboard" 
-            icon="musical-notes-outline" 
-            accent="#a855f7" 
-            theme={colors}
-          />
-          <StatCard 
             label="Streak" 
-            value="97 Days" 
+            value={`${profile?.streak ?? 0} Days`} 
             icon="flame" 
             accent="#f97316" 
             theme={colors}
           />
         </View>
 
-        {/* 4. Section Title */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Practice & Learn</Text>
 
-        {/* 5. Feature Cards */}
         <View style={styles.featuresGrid}>
           <FeatureCard 
-            title="Virtual Piano" 
-            subtitle="Practice scales & chords"
+            title="Virtual Instrument" 
+            subtitle="Practice anywhere"
             icon="keypad"
             colors={['#2563eb', '#1d4ed8']} 
           />
@@ -93,6 +109,7 @@ export default function Dashboard() {
             subtitle="Identify intervals"
             icon="ear"
             colors={['#16a34a', '#15803d']} 
+            onPress={() => router.push('/tabs/ear-training')}
           />
           <FeatureCard 
             title="Music Theory" 
@@ -107,7 +124,7 @@ export default function Dashboard() {
   );
 }
 
-// --- Reusable Components ---
+// --- Keep StatCard and FeatureCard components from your code ---
 
 function StatCard({ label, value, icon, accent, theme }: any) {
   return (
@@ -117,15 +134,16 @@ function StatCard({ label, value, icon, accent, theme }: any) {
       </View>
       <View>
         <Text style={[styles.statValue, { color: theme.text }]}>{value}</Text>
-        <Text style={[styles.statLabel, { color: theme.text }]}>{label}</Text>
+        <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{label}</Text>
       </View>
     </View>
   );
 }
 
-function FeatureCard({ title, subtitle, icon, colors }: { title: string; subtitle: string; icon: any; colors: readonly [string, string, ...string[]] }) {
+function FeatureCard({ title, subtitle, icon, colors, onPress }: { title: string; subtitle: string; icon: any; colors: readonly [string, string, ...string[]]; onPress?: () => void }) {
   return (
     <Pressable 
+      onPress={onPress}
       style={({ pressed }) => [
         styles.featureCardContainer,
         pressed && { transform: [{ scale: 0.98 }], opacity: 0.9 }
@@ -152,129 +170,42 @@ function FeatureCard({ title, subtitle, icon, colors }: { title: string; subtitl
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  background: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-  },
-  scrollContent: {
-    padding: 24,
-    paddingTop: 60,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  headerRight: {
+  container: { flex: 1 },
+  background: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  scrollContent: { padding: 24, paddingTop: 60 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  greeting: { fontSize: 16, marginBottom: 4 },
+  username: { fontSize: 28, fontWeight: 'bold' },
+  iconButton: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
+  avatarContainer: { width: 48, height: 48, borderRadius: 24, overflow: 'hidden', borderWidth: 2 },
+  avatarImage: { width: '100%', height: '100%' },
+  
+  // NEW SEARCH BAR STYLES
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-  },
-  greeting: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  username: {
-    fontSize: 28,
-    fontWeight: 'bold',
-  },
-  iconButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 32,
-  },
-  statCard: {
-    flex: 1,
-    padding: 12,
+    paddingHorizontal: 16,
+    height: 56,
     borderRadius: 16,
     borderWidth: 1,
-    alignItems: 'flex-start',
-    gap: 8,
+    marginBottom: 32,
+    gap: 12,
   },
-  iconBox: {
-    padding: 6,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 11,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  featuresGrid: {
-    gap: 16,
-  },
-  featureCardContainer: {
-    height: 100,
-    borderRadius: 24,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  featureGradient: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-  },
-  featureContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  featureTextContainer: {
-    flex: 1,
-  },
-  featureTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 4,
-  },
-  featureSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  featureIconBubble: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 16,
-  },
+  searchPlaceholder: { fontSize: 16 },
+
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: 32 },
+  statCard: { flex: 1, padding: 12, borderRadius: 16, borderWidth: 1, alignItems: 'flex-start', gap: 8 },
+  iconBox: { padding: 6, borderRadius: 8, marginBottom: 4 },
+  statValue: { fontSize: 14, fontWeight: 'bold', marginBottom: 2 },
+  statLabel: { fontSize: 11 },
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
+  featuresGrid: { gap: 16 },
+  featureCardContainer: { height: 100, borderRadius: 24, overflow: 'hidden', elevation: 5 },
+  featureGradient: { flex: 1, padding: 20, justifyContent: 'center' },
+  featureContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  featureTextContainer: { flex: 1 },
+  featureTitle: { fontSize: 20, fontWeight: 'bold', color: 'white', marginBottom: 4 },
+  featureSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
+  featureIconBubble: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginLeft: 16 },
 });
