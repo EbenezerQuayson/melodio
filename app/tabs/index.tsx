@@ -99,8 +99,8 @@ export default function Dashboard() {
 
         <View style={styles.featuresGrid}>
           <FeatureCard 
-            title="Virtual Piano" 
-            subtitle="Practice scales & chords"
+            title="Virtual Instrument" 
+            subtitle="Practice anywhere"
             icon="keypad"
             colors={['#2563eb', '#1d4ed8']} 
           />
@@ -109,6 +109,7 @@ export default function Dashboard() {
             subtitle="Identify intervals"
             icon="ear"
             colors={['#16a34a', '#15803d']} 
+            onPress={() => router.push('/tabs/ear-training')}
           />
           <FeatureCard 
             title="Music Theory" 
@@ -139,9 +140,10 @@ function StatCard({ label, value, icon, accent, theme }: any) {
   );
 }
 
-function FeatureCard({ title, subtitle, icon, colors }: { title: string; subtitle: string; icon: any; colors: readonly [string, string, ...string[]] }) {
+function FeatureCard({ title, subtitle, icon, colors, onPress }: { title: string; subtitle: string; icon: any; colors: readonly [string, string, ...string[]]; onPress?: () => void }) {
   return (
     <Pressable 
+      onPress={onPress}
       style={({ pressed }) => [
         styles.featureCardContainer,
         pressed && { transform: [{ scale: 0.98 }], opacity: 0.9 }

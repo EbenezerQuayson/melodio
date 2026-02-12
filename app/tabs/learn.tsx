@@ -88,7 +88,15 @@ export default function Learn() {
                 key={course.id} 
                 course={course} 
                 colors={colors} 
-                onPress={() => course.route ? router.push(course.route) : alert(`Open ${course.title}`)}
+                onPress={() => {
+        if (course.route) {
+          // Special case: "Ear Training" goes to its own tool page
+          router.push(course.route);
+        } else {
+          // Standard case: "Music Theory" goes to the Course Player
+          router.push(`/course/${course.id}`);
+        }
+      }}
               />
             ))}
           </ScrollView>

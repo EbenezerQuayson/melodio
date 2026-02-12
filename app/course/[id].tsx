@@ -20,6 +20,7 @@ const { width } = Dimensions.get('window');
 // --- MOCK DATA FOR LESSONS ---
 // In a real app, you'd fetch this from Supabase using the 'id'
 const COURSE_DETAILS: Record<string, any> = {
+  // --- PIANO ---
   'p1': {
     title: 'Piano Basics',
     description: 'Learn the fundamental hand positions, posture, and your first 5-finger scale.',
@@ -27,9 +28,31 @@ const COURSE_DETAILS: Record<string, any> = {
       { id: 'l1', title: 'Sitting Posture & Hand Shape', duration: '5:00', completed: true },
       { id: 'l2', title: 'The Musical Alphabet', duration: '3:20', completed: true },
       { id: 'l3', title: 'Finding Middle C', duration: '4:15', completed: false },
-      { id: 'l4', title: '5-Finger Scale (C Major)', duration: '6:30', completed: false },
     ]
   },
+  
+  // --- GUITAR (New!) ---
+  'g1': {
+    title: 'Guitar Chords',
+    description: 'Master the essential open chords: C, G, D, A, and E.',
+    lessons: [
+      { id: 'gl1', title: 'Tuning Your Guitar', duration: '4:00', completed: false },
+      { id: 'gl2', title: 'Reading Chord Diagrams', duration: '3:30', completed: false },
+      { id: 'gl3', title: 'Your First Chord (E Minor)', duration: '5:10', completed: false },
+    ]
+  },
+
+  // --- VOCALS (New!) ---
+  'v1': {
+    title: 'Vocal Control',
+    description: 'Learn to support your voice with proper breathing techniques.',
+    lessons: [
+      { id: 'vl1', title: 'Diaphragmatic Breathing', duration: '6:00', completed: false },
+      { id: 'vl2', title: 'Warm-up Sirens', duration: '4:45', completed: false },
+    ]
+  },
+
+  // --- CORE THEORY ---
   'c1': {
     title: 'Music Theory 101',
     description: 'Understand the building blocks of music: Notes, Scales, and Keys.',
@@ -38,14 +61,12 @@ const COURSE_DETAILS: Record<string, any> = {
       { id: 'mt2', title: 'Whole & Half Steps', duration: '5:30', completed: false },
     ]
   },
-  // Default fallback
+
+  // --- FALLBACK ---
   'default': {
-    title: 'Course Content',
-    description: 'Detailed lessons for this module.',
-    lessons: [
-      { id: 'd1', title: 'Introduction', duration: '2:00', completed: false },
-      { id: 'd2', title: 'Getting Started', duration: '5:00', completed: false },
-    ]
+    title: 'Coming Soon',
+    description: 'We are still filming lessons for this module!',
+    lessons: []
   }
 };
 

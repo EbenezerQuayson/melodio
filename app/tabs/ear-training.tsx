@@ -3,17 +3,19 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar } from 
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext'; // <--- 1. Import Theme Hook
 
 export default function EarTraining() {
   const router = useRouter();
+  const { colors, isDark } = useTheme(); // <--- 2. Get colors
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
-      {/* 1. Global Background */}
+      {/* 1. Global Background (Dynamic) */}
       <LinearGradient
-        colors={['#0f172a', '#1e1b4b', '#000000']}
+        colors={colors.backgroundGradient}
         style={styles.background}
       />
 
@@ -21,8 +23,8 @@ export default function EarTraining() {
         
         {/* 2. Header */}
         <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>Ear Gym 👂</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Ear Gym 👂</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
             Sharpen your listening skills. 10 mins a day.
           </Text>
         </View>
@@ -34,7 +36,7 @@ export default function EarTraining() {
           onPress={() => alert("Starting Daily Workout...")}
         >
           <LinearGradient
-            colors={['#a855f7', '#7c3aed']} // Brand Purple
+            colors={['#a855f7', '#7c3aed']} // Keep Brand Purple fixed
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.heroGradient}
@@ -53,7 +55,7 @@ export default function EarTraining() {
         </TouchableOpacity>
 
         {/* 4. Section: Specific Exercises */}
-        <Text style={styles.sectionHeader}>Browse Exercises</Text>
+        <Text style={[styles.sectionHeader, { color: colors.text }]}>Browse Exercises</Text>
         
         <View style={styles.gridContainer}>
           <ExerciseCard 
@@ -61,24 +63,28 @@ export default function EarTraining() {
             level="Beginner" 
             icon="resize" 
             color="#3b82f6" 
+            colors={colors} // Pass theme colors down
           />
           <ExerciseCard 
             title="Chords" 
             level="Medium" 
             icon="grid" 
             color="#10b981" 
+            colors={colors}
           />
           <ExerciseCard 
             title="Scales" 
             level="Hard" 
             icon="musical-notes" 
             color="#f59e0b" 
+            colors={colors}
           />
           <ExerciseCard 
             title="Perfect Pitch" 
             level="Extreme" 
             icon="flash" 
             color="#ef4444" 
+            colors={colors}
           />
         </View>
 
@@ -88,17 +94,22 @@ export default function EarTraining() {
 }
 
 // --- Reusable Component: Exercise Card ---
-function ExerciseCard({ title, level, icon, color }: { title: string, level: string, icon: any, color: string }) {
+function ExerciseCard({ title, level, icon, color, colors }: { title: string, level: string, icon: any, color: string, colors: any }) {
   return (
-    <TouchableOpacity style={styles.cardContainer}>
+    <TouchableOpacity 
+      style={[
+        styles.cardContainer, 
+        { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }
+      ]}
+    >
       <View style={[styles.iconBox, { backgroundColor: `${color}20` }]}>
         <Ionicons name={icon} size={24} color={color} />
       </View>
       <View style={styles.cardText}>
-        <Text style={styles.cardTitle}>{title}</Text>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>{title}</Text>
         <Text style={[styles.cardLevel, { color }]}>{level}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#64748b" />
+      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
     </TouchableOpacity>
   );
 }
@@ -106,7 +117,6 @@ function ExerciseCard({ title, level, icon, color }: { title: string, level: str
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   background: {
     position: 'absolute',
@@ -125,12 +135,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 34,
     fontWeight: 'bold',
-    color: 'white',
     marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#94a3b8',
     lineHeight: 24,
   },
   // Hero Card Styles
@@ -152,6 +160,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  // Keep Hero text white because background is always purple
   heroLabel: {
     color: 'rgba(255,255,255,0.7)',
     fontSize: 12,
@@ -186,7 +195,6 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: 'white',
     marginBottom: 16,
   },
   gridContainer: {
@@ -196,11 +204,9 @@ const styles = StyleSheet.create({
   cardContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(30, 41, 59, 0.5)', // Glassy Dark Blue
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
   },
   iconBox: {
     width: 48,
@@ -216,7 +222,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
     marginBottom: 4,
   },
   cardLevel: {
