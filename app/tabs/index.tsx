@@ -100,9 +100,10 @@ export default function Dashboard() {
         <View style={styles.featuresGrid}>
           <FeatureCard 
             title="Virtual Instrument" 
-            subtitle="Practice anywhere"
-            icon="keypad"
-            colors={['#2563eb', '#1d4ed8']} 
+            subtitle="Piano, Drums & More"
+            icon="musical-notes"
+            colors={['#2563eb', '#1d4ed8']}
+            onPress={() => router.push('/virtual-instruments')} 
           />
           <FeatureCard 
             title="Ear Training" 
