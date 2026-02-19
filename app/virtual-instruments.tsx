@@ -5,20 +5,19 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   StatusBar,
-  Alert
+  SafeAreaView,
+  useWindowDimensions, // <--- 1. Import this
+  Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import * as ScreenOrientation from 'expo-screen-orientation';
 
-// --- IMPORTS FROM NEW FOLDER ---
-// Ensure you created these files in components/instruments/
 import Piano from '@/components/instruments/Piano';
 import Drums from '@/components/instruments/Drums';
 
-// --- SOUND CONSTANTS ---
-// (In a real app, you might move these to constants/AudioAssets.ts)
+// --- SOUND CONSTANTS (Keep existing) ---
 const PIANO_SOUNDS: Record<string, string> = {
   'C4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/c4.mp3',
   'C#4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/c4s.mp3',
@@ -44,152 +43,257 @@ const DRUM_SOUNDS: Record<string, string> = {
 
 export default function VirtualInstruments() {
   const router = useRouter();
-  
-  // State
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
   const [activeTab, setActiveTab] = useState<'Piano' | 'Drums'>('Piano');
   const [activeSounds, setActiveSounds] = useState<Audio.Sound[]>([]);
 
-  // Cleanup sounds when leaving the screen
+  // 1. Allow Rotation (Unlock on mount)
+  useEffect(() => {
+    async function unlockOrientation() {
+      await ScreenOrientation.unlockAsync();
+    }
+    unlockOrientation();
+    return () => {
+      // Optional: Lock back to portrait when leaving if you want
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    };
+  }, []);
+
   useEffect(() => {
     return () => {
       activeSounds.forEach(sound => sound.unloadAsync());
     };
   }, [activeSounds]);
 
-  // Audio Engine
   const playNote = async (note: string) => {
     try {
       const url = activeTab === 'Piano' ? PIANO_SOUNDS[note] : DRUM_SOUNDS[note];
-      
-      if (!url) {
-        console.warn(`No sound found for note: ${note}`);
-        return;
-      }
-
-      // Create and play sound
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: url },
-        { shouldPlay: true }
-      );
-
-      // Add to state so we can unload it later
+      if (!url) return;
+      const { sound } = await Audio.Sound.createAsync({ uri: url }, { shouldPlay: true });
       setActiveSounds(prev => [...prev, sound]);
-
-      // Automatically unload from memory after playback finishes (optional optimization)
-      sound.setOnPlaybackStatusUpdate(async (status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          await sound.unloadAsync();
-        }
-      });
-
     } catch (error) {
       console.log('Error playing sound', error);
     }
   };
 
   return (
-    <View style={styles.container}>
-      {/* Studio Mode: Always dark status bar */}
-      <StatusBar barStyle="light-content" />
+    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? 30 : 0 }]}>
+      <StatusBar hidden={isLandscape} barStyle="light-content" />
       
-      {/* Dark Studio Background */}
-      <LinearGradient
-        colors={['#1e1b4b', '#0f172a', '#000000']}
-        style={styles.background}
-      />
+      {/* --- RESPONSIVE HEADER --- */}
+      <View style={[
+        styles.topBar, 
+        // In Portrait, stack vertically. In Landscape, row.
+        { flexDirection: isLandscape ? 'row' : 'column', height: isLandscape ? 50 : 'auto', gap: isLandscape ? 0 : 12 }
+      ]}>
+        
+        <View style={styles.leftControls}>
+          {/* Back Button */}
+          <TouchableOpacity onPress={() => router.back()} style={styles.navButton}>
+            <Ionicons name="arrow-back" size={20} color="#fff" />
+            {isLandscape && <Text style={styles.navText}>Exit</Text>}
+          </TouchableOpacity>
+          
+          <View style={styles.divider} />
 
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="close" size={24} color="white" />
-        </TouchableOpacity>
-        
-        {/* TAB SWITCHER */}
-        <View style={styles.segmentedControl}>
-          <TouchableOpacity 
-            style={[styles.segment, activeTab === 'Piano' && styles.segmentActive]}
-            onPress={() => setActiveTab('Piano')}
-          >
-            <Text style={[styles.segmentText, activeTab === 'Piano' && styles.segmentTextActive]}>Piano</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.segment, activeTab === 'Drums' && styles.segmentActive]}
-            onPress={() => setActiveTab('Drums')}
-          >
-            <Text style={[styles.segmentText, activeTab === 'Drums' && styles.segmentTextActive]}>Drums</Text>
-          </TouchableOpacity>
+          {/* Instrument Switcher */}
+          <View style={styles.instrumentSwitcher}>
+             <TouchableOpacity 
+               style={[styles.switchBtn, activeTab === 'Piano' && styles.switchBtnActive]}
+               onPress={() => setActiveTab('Piano')}
+             >
+                <Ionicons name="musical-notes" size={16} color={activeTab === 'Piano' ? '#fff' : '#888'} />
+                {/* Show text only in Portrait for clarity, or always */}
+                {!isLandscape && <Text style={[styles.btnText, {color: activeTab === 'Piano' ? '#fff':'#888', marginLeft: 4}]}>Piano</Text>}
+             </TouchableOpacity>
+             <TouchableOpacity 
+               style={[styles.switchBtn, activeTab === 'Drums' && styles.switchBtnActive]}
+               onPress={() => setActiveTab('Drums')}
+             >
+                <Ionicons name="ellipse" size={16} color={activeTab === 'Drums' ? '#fff' : '#888'} />
+                {!isLandscape && <Text style={[styles.btnText, {color: activeTab === 'Drums' ? '#fff':'#888', marginLeft: 4}]}>Drums</Text>}
+             </TouchableOpacity>
+          </View>
         </View>
-        
-        {/* Spacer for balance */}
-        <View style={{ width: 40 }} /> 
+
+        {/* Studio Controls (Hide some in Portrait to save space) */}
+        <View style={[styles.studioControls, { display: isLandscape ? 'flex' : 'none' }]}>
+            <View style={styles.usbButton}>
+              <View style={styles.ledLight} />
+              <Text style={styles.usbText}>MIDI</Text>
+            </View>
+
+            <View style={styles.buttonGroup}>
+              <TouchableOpacity style={styles.outlineBtn}><Text style={styles.btnText}>SCALE</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.outlineBtn}><Text style={styles.btnText}>KEY</Text></TouchableOpacity>
+            </View>
+        </View>
+
+        {/* Right Side Info */}
+        <View style={styles.rightControls}>
+          <Text style={styles.scaleText}>C Major</Text>
+        </View>
       </View>
 
-      {/* INSTRUMENT RENDERER */}
+      {/* --- SECONDARY BAR (Only visible in Landscape) --- */}
+      {isLandscape && (
+        <View style={styles.secondaryBar}>
+          <TouchableOpacity style={styles.outlineBtnSmall}>
+             <Text style={styles.btnTextSmall}>CHORD PAD</Text>
+          </TouchableOpacity>
+
+          <View style={styles.transposer}>
+             <Text style={styles.transposerText}>—</Text>
+             <View style={{flex:1}} />
+             <Text style={styles.transposerText}>+</Text>
+          </View>
+
+          <TouchableOpacity style={styles.outlineBtnSmall}>
+             <Text style={styles.btnTextSmall}>OCTAVE</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* --- INSTRUMENT AREA --- */}
       <View style={styles.instrumentArea}>
         {activeTab === 'Piano' ? (
-          <Piano onPlay={playNote} />
+           <Piano onPlay={playNote} />
         ) : (
-          <Drums onPlay={playNote} />
+           <Drums onPlay={playNote} />
         )}
       </View>
 
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: '#222', 
   },
-  background: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  header: {
-    flexDirection: 'row',
+  // TOP BAR
+  topBar: {
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 50, // Safe area top
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    zIndex: 10,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  segmentedControl: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    borderRadius: 20,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  segment: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
   },
-  segmentActive: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  leftControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  segmentText: {
-    color: '#94a3b8',
-    fontWeight: '600',
-    fontSize: 14,
+  studioControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  segmentTextActive: {
-    color: 'white',
-    fontWeight: '700',
+  rightControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    // In portrait, push this to the right using auto margin if needed
+    marginLeft: 'auto', 
   },
-  instrumentArea: {
+  
+  // Navigation & Switcher
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  navText: { color: '#ccc', fontSize: 12, fontWeight: '700' },
+  divider: { width: 1, height: 20, backgroundColor: '#444' },
+
+  instrumentSwitcher: {
+    flexDirection: 'row',
+    backgroundColor: '#111',
+    borderRadius: 8,
+    padding: 2,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  switchBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  switchBtnActive: {
+    backgroundColor: '#444',
+  },
+
+  // Other Controls
+  usbButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 4,
+    gap: 6,
+  },
+  ledLight: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4fd1c5' },
+  usbText: { color: '#ccc', fontWeight: '600', fontSize: 10 },
+  
+  buttonGroup: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  outlineBtn: {
+    borderWidth: 1,
+    borderColor: '#555',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  btnText: { color: '#ccc', fontSize: 10, fontWeight: '600' },
+  scaleText: { color: '#fff', fontSize: 14, fontFamily: 'monospace' },
+
+  // SECONDARY BAR
+  secondaryBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+    marginBottom: 4, 
+    height: 40, 
+  },
+  outlineBtnSmall: {
+    borderWidth: 1,
+    borderColor: '#555',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  btnTextSmall: { color: '#aaa', fontSize: 9, fontWeight: '600' },
+  transposer: {
     flex: 1,
-    justifyContent: 'center',
-    // No padding here so instruments can touch edges if needed
+    marginHorizontal: 16,
+    backgroundColor: '#111',
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 4,
+    maxWidth: 300,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  transposerText: { color: '#666', fontSize: 14, fontWeight: 'bold' },
+
+  // INSTRUMENT AREA
+  instrumentArea: {
+    flex: 1, 
+    backgroundColor: '#000',
+    borderTopWidth: 4,
+    borderTopColor: '#111',
   },
 });

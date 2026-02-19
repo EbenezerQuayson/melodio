@@ -1,210 +1,154 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   ScrollView, 
   TouchableOpacity, 
-  Image, 
+  SectionList,
   StatusBar,
   Dimensions,
   Alert
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { WebView } from 'react-native-webview'; 
+import YoutubePlayer from "react-native-youtube-iframe"; // <--- 1. Import new player
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
+import { getCourseById, Lesson } from '@/services/curriculumService'; 
 
 const { width } = Dimensions.get('window');
-
-// --- MOCK DATA FOR LESSONS ---
-// In a real app, you'd fetch this from Supabase using the 'id'
-const COURSE_DETAILS: Record<string, any> = {
-  // --- PIANO ---
-  'p1': {
-    title: 'Piano Basics',
-    description: 'Learn the fundamental hand positions, posture, and your first 5-finger scale.',
-    lessons: [
-      { id: 'l1', title: 'Sitting Posture & Hand Shape', duration: '5:00', completed: true },
-      { id: 'l2', title: 'The Musical Alphabet', duration: '3:20', completed: true },
-      { id: 'l3', title: 'Finding Middle C', duration: '4:15', completed: false },
-    ]
-  },
-  
-  // --- GUITAR (New!) ---
-  'g1': {
-    title: 'Guitar Chords',
-    description: 'Master the essential open chords: C, G, D, A, and E.',
-    lessons: [
-      { id: 'gl1', title: 'Tuning Your Guitar', duration: '4:00', completed: false },
-      { id: 'gl2', title: 'Reading Chord Diagrams', duration: '3:30', completed: false },
-      { id: 'gl3', title: 'Your First Chord (E Minor)', duration: '5:10', completed: false },
-    ]
-  },
-
-  // --- VOCALS (New!) ---
-  'v1': {
-    title: 'Vocal Control',
-    description: 'Learn to support your voice with proper breathing techniques.',
-    lessons: [
-      { id: 'vl1', title: 'Diaphragmatic Breathing', duration: '6:00', completed: false },
-      { id: 'vl2', title: 'Warm-up Sirens', duration: '4:45', completed: false },
-    ]
-  },
-
-  // --- CORE THEORY ---
-  'c1': {
-    title: 'Music Theory 101',
-    description: 'Understand the building blocks of music: Notes, Scales, and Keys.',
-    lessons: [
-      { id: 'mt1', title: 'The Staff & Clefs', duration: '4:00', completed: false },
-      { id: 'mt2', title: 'Whole & Half Steps', duration: '5:30', completed: false },
-    ]
-  },
-
-  // --- FALLBACK ---
-  'default': {
-    title: 'Coming Soon',
-    description: 'We are still filming lessons for this module!',
-    lessons: []
-  }
-};
+const VIDEO_HEIGHT = width * 0.5625; // Perfect 16:9 aspect ratio
 
 export default function CourseDetail() {
   const router = useRouter();
-  const { id } = useLocalSearchParams(); // <--- Captures 'p1', 'c1', etc.
+  const { id } = useLocalSearchParams(); 
   const { colors, isDark } = useTheme();
 
-  // Load data based on ID
-  const courseId = typeof id === 'string' ? id : 'default';
-  const courseData = COURSE_DETAILS[courseId] || COURSE_DETAILS['default'];
+  const course = getCourseById(id as string);
+  const firstLesson = course?.modules[0]?.lessons[0];
+  const [activeLesson, setActiveLesson] = useState<Lesson | undefined>(firstLesson);
+  const [isPlaying, setIsPlaying] = useState(false); // Track video play state
 
-  // State for the "Video Player" placeholder
-  const [activeLesson, setActiveLesson] = useState(courseData.lessons[0]);
-  const [isPlaying, setIsPlaying] = useState(false);
+  if (!course || !activeLesson) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: colors.text }}>Course content not found.</Text>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
+          <Text style={{ color: colors.tint }}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const sections = course.modules.map(mod => ({
+    title: mod.title,
+    data: mod.lessons
+  }));
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       
-      {/* 1. HERO / VIDEO AREA (Fixed at top) */}
-      <View style={[styles.videoContainer, { backgroundColor: '#000' }]}>
-        {/* Background Image/Thumbnail */}
-        <Image 
-          source={{ uri: 'https://images.unsplash.com/photo-1552422535-c45813c61732?w=800' }} 
-          style={[styles.videoThumbnail, { opacity: isPlaying ? 0.3 : 0.6 }]} 
-        />
-        
-        {/* Controls Overlay */}
-        <View style={styles.videoOverlay}>
-           {/* Back Button (Absolute) */}
-          <TouchableOpacity 
-            onPress={() => router.back()} 
-            style={styles.backButton}
-          >
-            <Ionicons name="chevron-down" size={28} color="white" />
-          </TouchableOpacity>
+      {/* --- 1. THE PLAYER AREA (Top) --- */}
+      <View style={styles.playerContainer}>
+        {/* Back Button Overlay */}
+        <TouchableOpacity 
+          onPress={() => router.back()} 
+          style={styles.backButton}
+        >
+          <Ionicons name="chevron-down" size={28} color="white" />
+        </TouchableOpacity>
 
-          {/* Play Button */}
-          <TouchableOpacity 
-            onPress={() => setIsPlaying(!isPlaying)}
-            style={styles.playButtonLarge}
-          >
-            <Ionicons name={isPlaying ? "pause" : "play"} size={40} color="black" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Video Progress Bar (Visual only) */}
-        <View style={styles.videoProgressBar}>
-          <View style={[styles.videoProgressFill, { width: '35%', backgroundColor: colors.tint }]} />
-        </View>
+        {/* 2. THE NEW YOUTUBE PLAYER */}
+        {activeLesson.type === 'video' && activeLesson.videoId ? (
+          <View style={{ marginTop: 40 }}> {/* Push down below the back button */}
+            <YoutubePlayer
+              height={VIDEO_HEIGHT}
+              play={isPlaying}
+              videoId={activeLesson.videoId}
+              onChangeState={(state: string) => {
+                if (state === 'ended') {
+                  setIsPlaying(false);
+                  Alert.alert("Awesome!", "Ready for the next lesson?");
+                }
+              }}
+            />
+          </View>
+        ) : activeLesson.type === 'practice' && activeLesson.scoreUrl ? (
+          <View style={{ flex: 1, marginTop: 40 }}>
+             <SheetMusicPlayer scoreUrl={activeLesson.scoreUrl} />
+          </View>
+        ) : (
+          <View style={styles.placeholder}>
+             <Text style={{color: 'white'}}>Content loading...</Text>
+          </View>
+        )}
       </View>
 
-      {/* 2. SCROLLABLE CONTENT */}
+      {/* --- 2. LESSON LIST (Bottom) --- */}
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          
-          {/* Header Info */}
-          <View style={styles.infoSection}>
-            <Text style={[styles.courseTitle, { color: colors.text }]}>{courseData.title}</Text>
-            <Text style={[styles.lessonTitle, { color: colors.tint }]}>
-              Now Playing: {activeLesson.title}
-            </Text>
-            <Text style={[styles.description, { color: colors.textSecondary }]}>
-              {courseData.description}
-            </Text>
-            
-            <View style={styles.metaRow}>
-              <View style={[styles.tag, { backgroundColor: colors.cardBg }]}>
-                <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
-                <Text style={[styles.tagText, { color: colors.textSecondary }]}>
-                  {courseData.lessons.length} Lessons
-                </Text>
-              </View>
-              <View style={[styles.tag, { backgroundColor: colors.cardBg }]}>
-                <Ionicons name="star" size={14} color="#f59e0b" />
-                <Text style={[styles.tagText, { color: colors.textSecondary }]}>4.8 Rating</Text>
-              </View>
-            </View>
-          </View>
+        
+        <View style={styles.infoSection}>
+          <Text style={[styles.courseTitle, { color: colors.text }]}>{course.title}</Text>
+          <Text style={[styles.lessonTitle, { color: colors.tint }]}>
+             Now Playing: {activeLesson.title}
+          </Text>
+        </View>
 
-          {/* Lesson List */}
-          <Text style={[styles.sectionHeader, { color: colors.text }]}>Syllabus</Text>
-          
-          <View style={styles.lessonList}>
-            {courseData.lessons.map((lesson: any, index: number) => {
-              const isActive = activeLesson.id === lesson.id;
-              return (
-                <TouchableOpacity 
-                  key={lesson.id}
-                  onPress={() => setActiveLesson(lesson)}
-                  style={[
-                    styles.lessonItem, 
-                    { 
-                      backgroundColor: isActive ? `${colors.tint}15` : colors.cardBg,
-                      borderColor: isActive ? colors.tint : 'transparent',
-                      borderWidth: 1
-                    }
-                  ]}
-                >
-                  {/* Leading Icon (Play or Lock) */}
-                  <View style={[styles.lessonIcon, { backgroundColor: isActive ? colors.tint : colors.iconBg }]}>
-                    <Ionicons 
-                      name={isActive ? "play" : "lock-open-outline"} 
-                      size={16} 
-                      color={isActive ? "white" : colors.textSecondary} 
-                    />
-                  </View>
-
-                  {/* Text Content */}
-                  <View style={styles.lessonText}>
-                    <Text style={[styles.lessonItemTitle, { color: colors.text, fontWeight: isActive ? 'bold' : 'normal' }]}>
-                      {index + 1}. {lesson.title}
-                    </Text>
-                    <Text style={[styles.lessonDuration, { color: colors.textSecondary }]}>
-                      {lesson.duration}
-                    </Text>
-                  </View>
-
-                  {/* Trailing Icon (Checkmark) */}
-                  {lesson.completed && (
-                    <Ionicons name="checkmark-circle" size={20} color={colors.tint} />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-        </ScrollView>
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>{title}</Text>
+          )}
+          renderItem={({ item }) => {
+            const isActive = activeLesson.id === item.id;
+            return (
+              <TouchableOpacity 
+                onPress={() => {
+                  setActiveLesson(item);
+                  setIsPlaying(false); // Reset play state when switching lessons
+                }}
+                style={[
+                  styles.lessonItem, 
+                  { 
+                    backgroundColor: isActive ? `${colors.tint}15` : colors.cardBg,
+                    borderColor: isActive ? colors.tint : 'transparent',
+                    borderWidth: 1
+                  }
+                ]}
+              >
+                <View style={[styles.iconBox, { backgroundColor: isActive ? colors.tint : colors.iconBg }]}>
+                  <Ionicons 
+                    name={item.type === 'video' ? 'play' : 'musical-notes'} 
+                    size={16} 
+                    color={isActive ? "white" : colors.textSecondary} 
+                  />
+                </View>
+                <View style={{flex: 1}}>
+                  <Text style={[styles.itemTitle, { color: colors.text, fontWeight: isActive ? 'bold' : 'normal' }]}>
+                    {item.title}
+                  </Text>
+                  <Text style={[styles.itemMeta, { color: colors.textSecondary }]}>
+                    {item.type === 'video' ? `${Math.floor((item.duration || 0) / 60)} mins` : `${item.xp} XP`}
+                  </Text>
+                </View>
+                {item.completed && <Ionicons name="checkmark-circle" size={18} color={colors.tint} />}
+              </TouchableOpacity>
+            );
+          }}
+        />
       </View>
 
-      {/* 3. BOTTOM ACTION BAR */}
+      {/* --- 3. FOOTER --- */}
       <View style={[styles.bottomBar, { backgroundColor: colors.background, borderTopColor: colors.cardBorder }]}>
         <TouchableOpacity 
           style={[styles.completeButton, { backgroundColor: colors.tint }]}
-          onPress={() => Alert.alert("Nice work!", "Lesson marked as complete.")}
+          onPress={() => Alert.alert("Nice!", "Lesson marked as complete.")}
         >
-          <Text style={styles.completeButtonText}>Mark Lesson Complete</Text>
+          <Text style={styles.completeButtonText}>Mark Complete</Text>
         </TouchableOpacity>
       </View>
 
@@ -212,150 +156,97 @@ export default function CourseDetail() {
   );
 }
 
+// --- SUB-COMPONENT: Sheet Music Renderer ---
+function SheetMusicPlayer({ scoreUrl }: { scoreUrl: string }) {
+  const osmdHtml = `
+    <html>
+      <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/opensheetmusicdisplay/1.8.6/opensheetmusicdisplay.min.js"></script>
+        <style>body { background: #fff; margin: 0; display: flex; justify-content: center; }</style>
+      </head>
+      <body>
+        <div id="osmdCanvas" style="width: 100%; height: 100vh;"></div>
+        <script>
+          var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmdCanvas", {
+            autoResize: true,
+            backend: "svg",
+            drawingParameters: "compacttight"
+          });
+          osmd.load("${scoreUrl}").then(function() {
+            osmd.render();
+          });
+        </script>
+      </body>
+    </html>
+  `;
+
+  return (
+    <WebView
+      originWhitelist={['*']}
+      source={{ html: osmdHtml }}
+      style={{ flex: 1, backgroundColor: 'white' }}
+    />
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   
-  // Video Player Styles
-  videoContainer: {
+  playerContainer: {
     width: '100%',
-    height: width * 0.5625, // 16:9 Aspect Ratio
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#000',
+    paddingTop: 10, 
+    minHeight: VIDEO_HEIGHT + 40, // Ensure enough height for the video + back button
   },
-  videoThumbnail: {
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
-  },
-  videoOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.2)',
-  },
+  placeholder: { height: VIDEO_HEIGHT, justifyContent: 'center', alignItems: 'center' },
+  
   backButton: {
     position: 'absolute',
-    top: 40, // adjust for safe area
+    top: 40, 
     left: 20,
+    zIndex: 10,
     padding: 8,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  playButtonLarge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-  },
-  videoProgressBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-  },
-  videoProgressFill: {
-    height: '100%',
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
 
-  // Content Styles
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 100, // Space for bottom bar
-  },
-  infoSection: {
-    marginBottom: 24,
-  },
-  courseTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  lessonTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  description: {
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 6,
-  },
-  tagText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-
-  // Lesson List Styles
+  infoSection: { padding: 20, paddingBottom: 10 },
+  courseTitle: { fontSize: 22, fontWeight: 'bold' },
+  lessonTitle: { fontSize: 14, fontWeight: '600', marginTop: 4 },
+  
   sectionHeader: {
-    fontSize: 18,
+    fontSize: 13,
     fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  lessonList: {
-    gap: 12,
+    textTransform: 'uppercase',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginTop: 10,
   },
   lessonItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
+    marginHorizontal: 20,
+    marginBottom: 8,
     borderRadius: 12,
+    gap: 12,
   },
-  lessonIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+  iconBox: {
+    width: 32, height: 32, borderRadius: 16,
+    justifyContent: 'center', alignItems: 'center',
   },
-  lessonText: {
-    flex: 1,
-  },
-  lessonItemTitle: {
-    fontSize: 14,
-    marginBottom: 2,
-  },
-  lessonDuration: {
-    fontSize: 12,
-  },
+  itemTitle: { fontSize: 14 },
+  itemMeta: { fontSize: 11 },
 
-  // Bottom Bar
   bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     padding: 20,
-    paddingBottom: 40, // adjust for home indicator
+    paddingBottom: 40,
     borderTopWidth: 1,
   },
   completeButton: {
-    paddingVertical: 16,
-    borderRadius: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  completeButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
+  completeButtonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
 });
