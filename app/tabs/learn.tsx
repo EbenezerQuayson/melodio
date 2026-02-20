@@ -14,16 +14,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 import { useProfile } from '@/hooks/useProfile';
-
+import {useProgress} from '@/context/ProgressContext';
 // 1. IMPORT YOUR SERVICE
 import { getCoursesByCategory, Course } from '@/services/curriculumService';
 
-const { width } = Dimensions.get('window');
 
 export default function Learn() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const { profile, refetch } = useProfile();
+  const {xp, completedLessons} = useProgress();
 
   // State to hold the courses we fetch
   const [coreCourses, setCoreCourses] = useState<Course[]>([]);
@@ -42,7 +42,7 @@ export default function Learn() {
       const instruments = profile?.instruments || ['Piano']; // Default to Piano if empty
       const instrumentData: Record<string, Course[]> = {};
       
-      instruments.forEach(inst => {
+      instruments.forEach((inst: string) => {
         instrumentData[inst] = getCoursesByCategory(inst);
       });
       
@@ -64,10 +64,16 @@ export default function Learn() {
         
         {/* Header */}
         <View style={styles.header}>
+          <View>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Your Curriculum</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
             Tailored to your instruments.
           </Text>
+        </View>
+        <View style={[styles.xpBadge, { backgroundColor: 'rgba(251,191,36,0.15)' }]}>
+            <Ionicons name="star" size={16} color="#fbbf24" />
+            <Text style={styles.xpText}>{xp} XP</Text>
+          </View>
         </View>
 
         {/* SECTION 1: CORE FOUNDATIONS (Theory) */}
@@ -121,6 +127,7 @@ export default function Learn() {
                     key={course.id} 
                     course={course} 
                     colors={colors} 
+                    completedLessons={completedLessons}
                     onPress={() => router.push(`/course/${course.id}`)}
                   />
                 ))}
@@ -160,7 +167,25 @@ function CoreCard({ course, colors, onPress }: any) {
   );
 }
 
-function InstrumentCard({ course, colors, onPress }: any) {
+function InstrumentCard({ course, colors, onPress, completedLessons }: any) {
+  // 1. Calculate Progress
+  let totalLessons = 0;
+  let completedCount = 0;
+
+  // Loop through modules and count lessons
+  if (course.modules) {
+    course.modules.forEach((mod: any) => {
+      totalLessons += mod.lessons?.length || 0;
+      mod.lessons?.forEach((lesson: any) => {
+       if (completedLessons && completedLessons.includes(lesson.id)) {
+          completedCount++;
+        }
+      });
+    });
+  }
+
+  // Prevent divide-by-zero if a course has no lessons yet
+  const progressPercent = totalLessons === 0 ? 0 : (completedCount / totalLessons) * 100;
   return (
     <TouchableOpacity 
       style={[styles.instCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}
@@ -177,6 +202,13 @@ function InstrumentCard({ course, colors, onPress }: any) {
       >
         <Text style={styles.instTitle}>{course.title}</Text>
         <Text style={styles.instSubtitle}>{course.level} • {course.modules.length} Modules</Text>
+
+        <View style={styles.miniProgressContainer}>
+          <View style={styles.miniProgressBar}>
+             <View style={[styles.miniProgressFill, { width: `${progressPercent}%`, backgroundColor: colors.tint }]} />
+          </View>
+          <Text style={styles.miniProgressText}>{completedCount} / {totalLessons}</Text>
+        </View>
         
         <View style={styles.playButton}>
           <Ionicons name="play" size={12} color="black" />
@@ -191,9 +223,33 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   background: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
   content: { paddingBottom: 50 },
-  header: { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 20 },
+ // Replace your existing header style with these:
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    paddingHorizontal: 20, 
+    paddingTop: 60, 
+    paddingBottom: 20 
+  },
   headerTitle: { fontSize: 28, fontWeight: 'bold' },
   headerSubtitle: { fontSize: 14, marginTop: 4 },
+  
+  xpBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(251,191,36,0.3)',
+  },
+  xpText: {
+    color: '#fbbf24',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
   
   sectionContainer: { marginBottom: 32 },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 },
@@ -216,7 +272,7 @@ const styles = StyleSheet.create({
   },
   instImagePlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
   instOverlay: {
-    position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, padding: 16, justifyContent: 'flex-end',
+    position: 'absolute', bottom: 0, left: 0, right: 0, height: 140, padding: 16, justifyContent: 'flex-end',
   },
   instTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
   instSubtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 12, marginBottom: 12 },
@@ -224,4 +280,26 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start', backgroundColor: 'white', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, gap: 4
   },
   playText: { fontSize: 12, fontWeight: 'bold', color: 'black' },
+  miniProgressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12, // Space between progress and play button
+  },
+  miniProgressBar: {
+    flex: 1,
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  miniProgressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  miniProgressText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
 });

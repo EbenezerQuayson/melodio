@@ -93,6 +93,14 @@ export default function Dashboard() {
             accent="#f97316" 
             theme={colors}
           />
+
+          <StatCard
+            label="XP" 
+            value={`${profile?.xp ?? 0} XP`} 
+            icon="star" 
+            accent="#fbbf24" 
+            theme={colors}
+          />
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Practice & Learn</Text>

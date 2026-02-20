@@ -6,11 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useProfile } from '@/hooks/useProfile';
+import { useProgress } from '@/context/ProgressContext';
 
 export default function Profile() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const { profile, loading, user , refetch} = useProfile();
+  const {xp} = useProgress();
 
   useFocusEffect(
     useCallback(() => {
@@ -102,7 +104,7 @@ export default function Profile() {
           </View>
           <View style={[styles.statDivider, { backgroundColor: colors.cardBorder }]} />
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: colors.text }]}>{profile?.xp ?? 0}</Text>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{xp ?? 0}</Text>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total XP</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: colors.cardBorder }]} />

@@ -64,6 +64,7 @@ export default function EarTraining() {
             icon="resize" 
             color="#3b82f6" 
             colors={colors} // Pass theme colors down
+            onPress={() => router.push('/exercise/interval')}
           />
           <ExerciseCard 
             title="Chords" 
@@ -71,6 +72,7 @@ export default function EarTraining() {
             icon="grid" 
             color="#10b981" 
             colors={colors}
+            onPress={() => alert("Chords Exercise Coming Soon!")}
           />
           <ExerciseCard 
             title="Scales" 
@@ -78,6 +80,7 @@ export default function EarTraining() {
             icon="musical-notes" 
             color="#f59e0b" 
             colors={colors}
+            onPress={() => alert("Scales Exercise Coming Soon!")}
           />
           <ExerciseCard 
             title="Perfect Pitch" 
@@ -85,6 +88,8 @@ export default function EarTraining() {
             icon="flash" 
             color="#ef4444" 
             colors={colors}
+            onPress={() => alert("Perfect Pitch Exercise Coming Soon!")}
+
           />
         </View>
 
@@ -94,13 +99,14 @@ export default function EarTraining() {
 }
 
 // --- Reusable Component: Exercise Card ---
-function ExerciseCard({ title, level, icon, color, colors }: { title: string, level: string, icon: any, color: string, colors: any }) {
+function ExerciseCard({ title, level, icon, color, colors, onPress }: { title: string, level: string, icon: any, color: string, colors: any, onPress: () => void }) {
   return (
     <TouchableOpacity 
       style={[
         styles.cardContainer, 
         { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }
       ]}
+      onPress={onPress}
     >
       <View style={[styles.iconBox, { backgroundColor: `${color}20` }]}>
         <Ionicons name={icon} size={24} color={color} />

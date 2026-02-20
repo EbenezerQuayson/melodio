@@ -15,15 +15,21 @@ import { WebView } from 'react-native-webview';
 import YoutubePlayer from "react-native-youtube-iframe"; // <--- 1. Import new player
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
+import {useProgress} from '@/context/ProgressContext';
 import { getCourseById, Lesson } from '@/services/curriculumService'; 
 
 const { width } = Dimensions.get('window');
 const VIDEO_HEIGHT = width * 0.5625; // Perfect 16:9 aspect ratio
 
+
+
+
 export default function CourseDetail() {
   const router = useRouter();
   const { id } = useLocalSearchParams(); 
   const { colors, isDark } = useTheme();
+const {completedLessons = [], markLessonComplete} = useProgress();
+
 
   const course = getCourseById(id as string);
   const firstLesson = course?.modules[0]?.lessons[0];
@@ -62,7 +68,7 @@ export default function CourseDetail() {
 
         {/* 2. THE NEW YOUTUBE PLAYER */}
         {activeLesson.type === 'video' && activeLesson.videoId ? (
-          <View style={{ marginTop: 40 }}> {/* Push down below the back button */}
+          <View style={{ marginTop: 40 }}> 
             <YoutubePlayer
               height={VIDEO_HEIGHT}
               play={isPlaying}
@@ -135,7 +141,9 @@ export default function CourseDetail() {
                     {item.type === 'video' ? `${Math.floor((item.duration || 0) / 60)} mins` : `${item.xp} XP`}
                   </Text>
                 </View>
-                {item.completed && <Ionicons name="checkmark-circle" size={18} color={colors.tint} />}
+                {completedLessons.includes(item.id) && (
+  <Ionicons name="checkmark-circle" size={18} color={colors.tint} />
+)}
               </TouchableOpacity>
             );
           }}
@@ -144,13 +152,23 @@ export default function CourseDetail() {
 
       {/* --- 3. FOOTER --- */}
       <View style={[styles.bottomBar, { backgroundColor: colors.background, borderTopColor: colors.cardBorder }]}>
-        <TouchableOpacity 
-          style={[styles.completeButton, { backgroundColor: colors.tint }]}
-          onPress={() => Alert.alert("Nice!", "Lesson marked as complete.")}
-        >
-          <Text style={styles.completeButtonText}>Mark Complete</Text>
-        </TouchableOpacity>
-      </View>
+  <TouchableOpacity 
+    // Disable the button if it's already completed
+    disabled={completedLessons.includes(activeLesson.id)}
+    style={[
+      styles.completeButton, 
+      { backgroundColor: completedLessons.includes(activeLesson.id) ? '#333' : colors.tint }
+    ]}
+    onPress={() => {
+      markLessonComplete(activeLesson.id, activeLesson.xp || 50);
+      Alert.alert("XP Earned! ⭐️", "Lesson marked as complete.");
+    }}
+  >
+    <Text style={styles.completeButtonText}>
+      {completedLessons.includes(activeLesson.id) ? "Completed ✅" : "Mark Complete"}
+    </Text>
+  </TouchableOpacity>
+</View>
 
     </View>
   );
@@ -158,34 +176,75 @@ export default function CourseDetail() {
 
 // --- SUB-COMPONENT: Sheet Music Renderer ---
 function SheetMusicPlayer({ scoreUrl }: { scoreUrl: string }) {
+  // We inject this HTML into the WebView. 
+  // It fetches the OSMD library, creates a canvas, and renders the XML.
   const osmdHtml = `
+    <!DOCTYPE html>
     <html>
       <head>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/opensheetmusicdisplay/1.8.6/opensheetmusicdisplay.min.js"></script>
-        <style>body { background: #fff; margin: 0; display: flex; justify-content: center; }</style>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/opensheetmusicdisplay/1.8.8/opensheetmusicdisplay.min.js"></script>
+        
+        <style>
+          body { 
+            margin: 0; 
+            padding: 15px; 
+            background: #ffffff; 
+          }
+          #loader { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            color: #64748b; 
+            text-align: center; 
+            margin-top: 40px; 
+            font-weight: bold;
+          }
+          #osmdCanvas { width: 100%; }
+        </style>
       </head>
       <body>
-        <div id="osmdCanvas" style="width: 100%; height: 100vh;"></div>
+        <div id="loader">Loading Sheet Music... 🎼</div>
+        <div id="osmdCanvas"></div>
+        
         <script>
+          // Initialize the renderer
           var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmdCanvas", {
             autoResize: true,
             backend: "svg",
-            drawingParameters: "compacttight"
+            drawTitle: false, // Hiding the title saves vertical space on phones
+            drawingParameters: "compacttight" // Compresses the notes to fit mobile better
           });
-          osmd.load("${scoreUrl}").then(function() {
-            osmd.render();
-          });
+
+          // Load the XML file and render it
+          osmd.load("${scoreUrl}")
+            .then(function() {
+              // Hide the loading text once it's ready
+              document.getElementById('loader').style.display = 'none';
+              osmd.render();
+            })
+            .catch(function(err) {
+              document.getElementById('loader').innerText = "Error loading score. Check your internet connection.";
+              console.error(err);
+            });
         </script>
       </body>
     </html>
   `;
 
   return (
-    <WebView
-      originWhitelist={['*']}
-      source={{ html: osmdHtml }}
-      style={{ flex: 1, backgroundColor: 'white' }}
-    />
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
+      <WebView
+        originWhitelist={['*']}
+        source={{ html: osmdHtml,
+          baseUrl: 'https://raw.githubusercontent.com'
+         }}
+        style={{ flex: 1, backgroundColor: 'transparent' }}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        mixedContentMode="always"
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 }
 

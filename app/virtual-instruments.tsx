@@ -18,20 +18,34 @@ import Piano from '@/components/instruments/Piano';
 import Drums from '@/components/instruments/Drums';
 
 // --- SOUND CONSTANTS (Keep existing) ---
+const SOUND_BASE = 'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_grand_piano-mp3/';
+
 const PIANO_SOUNDS: Record<string, string> = {
-  'C4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/c4.mp3',
-  'C#4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/c4s.mp3',
-  'D4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/d4.mp3',
-  'D#4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/d4s.mp3',
-  'E4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/e4.mp3',
-  'F4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/f4.mp3',
-  'F#4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/f4s.mp3',
-  'G4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/g4.mp3',
-  'G#4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/g4s.mp3',
-  'A4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/a4.mp3',
-  'A#4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/a4s.mp3',
-  'B4': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/b4.mp3',
-  'C5': 'https://raw.githubusercontent.com/fuhton/react-piano/master/public/audio/c5.mp3',
+  'C4': `${SOUND_BASE}C4.mp3`,
+  'C#4': `${SOUND_BASE}Db4.mp3`,
+  'D4': `${SOUND_BASE}D4.mp3`,
+  'D#4': `${SOUND_BASE}Eb4.mp3`,
+  'E4': `${SOUND_BASE}E4.mp3`,
+  'F4': `${SOUND_BASE}F4.mp3`,
+  'F#4': `${SOUND_BASE}Gb4.mp3`,
+  'G4': `${SOUND_BASE}G4.mp3`,
+  'G#4': `${SOUND_BASE}Ab4.mp3`,
+  'A4': `${SOUND_BASE}A4.mp3`,
+  'A#4': `${SOUND_BASE}Bb4.mp3`,
+  'B4': `${SOUND_BASE}B4.mp3`,
+  'C5': `${SOUND_BASE}C5.mp3`,
+  'C#5': `${SOUND_BASE}Db5.mp3`,
+  'D5': `${SOUND_BASE}D5.mp3`,
+  'D#5': `${SOUND_BASE}Eb5.mp3`,
+  'E5': `${SOUND_BASE}E5.mp3`,
+  'F5': `${SOUND_BASE}F5.mp3`,
+  'F#5': `${SOUND_BASE}Gb5.mp3`,
+  'G5': `${SOUND_BASE}G5.mp3`,
+  'G#5': `${SOUND_BASE}Ab5.mp3`,
+  'A5': `${SOUND_BASE}A5.mp3`,
+  'A#5': `${SOUND_BASE}Bb5.mp3`,
+  'B5': `${SOUND_BASE}B5.mp3`,
+  'C6': `${SOUND_BASE}C6.mp3`,
 };
 
 const DRUM_SOUNDS: Record<string, string> = {

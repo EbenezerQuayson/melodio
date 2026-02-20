@@ -47,7 +47,7 @@ const CURRICULUM: Course[] = [
               "id": "l_02",
               "title": "Playing C Major",
               "type": "practice",
-              "scoreUrl": "https://raw.githubusercontent.com/opensheetmusicdisplay/spl/master/Mozart_KV331_1st_Mov_Theme.musicxml",
+              "scoreUrl":"https://raw.githubusercontent.com/opensheetmusicdisplay/opensheetmusicdisplay/master/test/data/MuzioClementi_SonatinaOpus36No1_Part1.xml",
               "xp": 50
             }
           ]
