@@ -1,0 +1,34 @@
+{
+  "courses": [
+    {
+      "id": "piano_101",
+      "title": "Piano Foundations",
+      "instrument": "Piano",
+      "level": "Beginner",
+      "modules": [
+        {
+          "title": "Module 1: The C Major Scale",
+          "lessons": [
+            {
+              "id": "l_01",
+              "title": "Introduction to the C Major Scale",
+              "type": "video",
+              "videoId": "oU5jRnpJqM4", 
+              "duration": 300
+            },
+            {
+              "id": "l_02",
+              "title": "Playing C Major",
+              "type": "practice",
+              "description": "Play the C Major scale along with the interactive score.",
+              "scoreUrl": "https://raw.githubusercontent.com/opensheetmusicdisplay/spl/master/Mozart_KV331_1st_Mov_Theme.musicxml",
+              "xp": 50
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+
