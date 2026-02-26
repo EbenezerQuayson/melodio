@@ -5,10 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useProfile } from '@/hooks/useProfile';
+import { useProgress } from '@/context/ProgressContext';
 
 export default function Dashboard() {
   const router = useRouter();
   const { colors, isDark, toggleTheme } = useTheme();
+  const {xp} = useProgress();
   
   // 1. Fetch real profile data
   const { profile, refetch } = useProfile();
@@ -96,7 +98,7 @@ export default function Dashboard() {
 
           <StatCard
             label="XP" 
-            value={`${profile?.xp ?? 0} XP`} 
+            value={`${xp ?? 0} XP`} 
             icon="star" 
             accent="#fbbf24" 
             theme={colors}
